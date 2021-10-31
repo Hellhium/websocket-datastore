@@ -70,8 +70,9 @@ func (ds *dataStore) Save() {
 }
 
 type loginMessage struct {
-	User string `json:"user"`
-	Pass string `json:"pass"`
+	User  string `json:"user"`
+	Pass  string `json:"pass"`
+	Debug string `json:"debug"`
 }
 
 type wsRequest struct {
@@ -97,6 +98,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
+	debug := 0
 
 	{
 		_, message, err := c.ReadMessage()
@@ -110,10 +112,23 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			log.Println("Invalid login")
 			return
 		}
+		switch loginReq.Debug {
+		case "full":
+			debug = 2
+		case "verbose":
+			debug = 1
+		}
+		if debug > 0 {
+			log.Print("New session with debug", debug)
+		}
 	}
 
 	for {
 		mt, message, err := c.ReadMessage()
+		if debug > 1 {
+			log.Print(mt, message)
+		}
+
 		if err != nil {
 			log.Printf("WS closed: %s", err)
 			return
@@ -141,6 +156,9 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data, _ := json.Marshal(wsResp)
+		if debug > 1 {
+			log.Print(mt, data)
+		}
 		err = c.WriteMessage(mt, data)
 		if err != nil {
 			log.Println("WS write closed: :", err)
