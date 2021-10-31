@@ -13,7 +13,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{}
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 var addr = flag.String("addr", "localhost:8080", "http service address")
 var datastorePath = flag.String("dspath", "data/ds.json", "Datastore path")
 var ds = dataStore{}
@@ -91,6 +93,7 @@ type wsResponse struct {
 func echo(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		log.Printf("Upgrade: %s", err)
 		return
 	}
 	defer c.Close()
