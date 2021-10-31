@@ -9,7 +9,7 @@ RUN go build -o wsapi
 
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates musl
+RUN apk add --no-cache ca-certificates musl libc6-compat
 WORKDIR /root
 RUN mkdir /root/data
 VOLUME /root/data
