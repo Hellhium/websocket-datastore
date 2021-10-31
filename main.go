@@ -180,7 +180,10 @@ func opGetAll(req *wsRequest) (resp *wsResponse) {
 	defer ds.opsM.Unlock()
 
 	if dstype, ok := ds.data[req.DataType]; ok {
-		resp.Data = dstype
+		resp.Data = map[string]interface{}{
+			"list":  dstype,
+			"count": len(dstype),
+		}
 		resp.Success = true
 	} else {
 		resp.Error = "Datatype not found"
