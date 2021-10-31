@@ -16,7 +16,7 @@ import (
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
-var addr = flag.String("addr", "localhost:8080", "http service address")
+var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
 var datastorePath = flag.String("dspath", "data/ds.json", "Datastore path")
 var ds = dataStore{}
 
