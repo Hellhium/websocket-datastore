@@ -83,11 +83,11 @@ type wsRequest struct {
 }
 
 type wsResponse struct {
-	ReqID        int         `json:"reqid"`
-	LastInsertID int64       `json:"lastinsertid"`
-	Data         interface{} `json:"data"`
-	Error        string      `json:"error"`
-	Success      bool        `json:"success"`
+	ReqID        int                    `json:"reqid"`
+	LastInsertID int64                  `json:"lastinsertid"`
+	Data         map[string]interface{} `json:"data"`
+	Error        string                 `json:"error"`
+	Success      bool                   `json:"success"`
 }
 
 func echo(w http.ResponseWriter, r *http.Request) {
