@@ -1,0 +1,36 @@
+name: CI to docker hub
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  remove-old-artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Out Repo 
+        uses: actions/checkout@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          registry: rg.fr-par.scw.cloud
+          username: leethium
+          password: ${{ secrets.SCW_SECRET_TOKEN }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./
+          file: ./Dockerfile
+          push: true
+          tags: rg.fr-par.scw.cloud/leethium/wsdatastore:latest
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
