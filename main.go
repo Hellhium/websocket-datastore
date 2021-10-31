@@ -192,6 +192,11 @@ func opSet(req *wsRequest) (resp *wsResponse) {
 
 	ds.opsM.Lock()
 	defer ds.opsM.Unlock()
+	defer func() {
+		if resp.Success {
+			ds.Save()
+		}
+	}()
 
 	if dstype, ok := ds.data[req.DataType]; ok {
 		dstype[req.ID] = req.Data
@@ -213,6 +218,11 @@ func opAdd(req *wsRequest) (resp *wsResponse) {
 
 	ds.opsM.Lock()
 	defer ds.opsM.Unlock()
+	defer func() {
+		if resp.Success {
+			ds.Save()
+		}
+	}()
 
 	if dstype, ok := ds.data[req.DataType]; ok {
 		nextID := int64(len(dstype))
@@ -223,10 +233,12 @@ func opAdd(req *wsRequest) (resp *wsResponse) {
 
 		dstype[nextID] = req.Data
 		resp.LastInsertID = nextID
+		resp.Success = true
 	} else {
 		ds.data[req.DataType] = map[int64]map[string]interface{}{
 			req.ID: req.Data,
 		}
+		resp.Success = true
 	}
 
 	return
@@ -239,6 +251,11 @@ func opDel(req *wsRequest) (resp *wsResponse) {
 
 	ds.opsM.Lock()
 	defer ds.opsM.Unlock()
+	defer func() {
+		if resp.Success {
+			ds.Save()
+		}
+	}()
 
 	if dstype, ok := ds.data[req.DataType]; ok {
 		if _, ok := dstype[req.ID]; ok {
