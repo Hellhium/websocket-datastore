@@ -110,6 +110,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal([]byte(message), &loginReq)
 		if loginReq.Pass != "api" || loginReq.User != "api" {
 			log.Println("Invalid login")
+			log.Printf("%s\n\n%+#v", message, loginReq)
 			return
 		}
 		switch loginReq.Debug {
