@@ -31,7 +31,7 @@ func main() {
 }
 
 type dataStore struct {
-	data  map[string]map[int64]map[string]interface{}
+	data  map[string]map[uint64]map[string]interface{}
 	opsM  sync.Mutex
 	saveM sync.Mutex
 }
@@ -47,7 +47,7 @@ func (ds *dataStore) Load() {
 				os.MkdirAll(fp, 0755)
 			}
 			ioutil.WriteFile(*datastorePath, []byte("{}"), 0644)
-			ds.data = map[string]map[int64]map[string]interface{}{}
+			ds.data = map[string]map[uint64]map[string]interface{}{}
 			return
 		}
 		log.Fatal(err)
@@ -80,13 +80,13 @@ type wsRequest struct {
 	ReqID    int                    `json:"reqid"`
 	ReqType  string                 `json:"reqtype"`  // GET / SET / GETALL / ADD / DEL
 	DataType string                 `json:"datatype"` // User / item / ....
-	ID       int64                  `json:"id"`
+	ID       uint64                 `json:"id"`
 	Data     map[string]interface{} `json:"data"`
 }
 
 type wsResponse struct {
 	ReqID        int                    `json:"reqid"`
-	LastInsertID int64                  `json:"lastinsertid"`
+	LastInsertID uint64                 `json:"lastinsertid"`
 	Data         map[string]interface{} `json:"data"`
 	Error        string                 `json:"error"`
 	Success      bool                   `json:"success"`
@@ -236,7 +236,7 @@ func opSet(req *wsRequest) (resp *wsResponse) {
 	if dstype, ok := ds.data[req.DataType]; ok {
 		dstype[req.ID] = req.Data
 	} else {
-		ds.data[req.DataType] = map[int64]map[string]interface{}{
+		ds.data[req.DataType] = map[uint64]map[string]interface{}{
 			req.ID: req.Data,
 		}
 	}
@@ -260,7 +260,7 @@ func opAdd(req *wsRequest) (resp *wsResponse) {
 	}()
 
 	if dstype, ok := ds.data[req.DataType]; ok {
-		nextID := int64(len(dstype))
+		nextID := uint64(len(dstype))
 		if _, exist := dstype[nextID]; exist {
 			resp.Error = "Add non incremental"
 			return
@@ -270,7 +270,7 @@ func opAdd(req *wsRequest) (resp *wsResponse) {
 		resp.LastInsertID = nextID
 		resp.Success = true
 	} else {
-		ds.data[req.DataType] = map[int64]map[string]interface{}{
+		ds.data[req.DataType] = map[uint64]map[string]interface{}{
 			req.ID: req.Data,
 		}
 		resp.Success = true
