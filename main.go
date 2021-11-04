@@ -24,7 +24,8 @@ func main() {
 	ds.Load()
 	log.Println("Datastore loaded")
 	flag.Parse()
-	http.HandleFunc("/ws", echo)
+	http.HandleFunc("/ws", wsApi)
+	http.HandleFunc("/", getAll)
 	log.Printf("WS Listening on %s", *addr)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
@@ -91,7 +92,15 @@ type wsResponse struct {
 	Success      bool                   `json:"success"`
 }
 
-func echo(w http.ResponseWriter, r *http.Request) {
+func getAll(w http.ResponseWriter, r *http.Request) {
+	jse := json.NewEncoder(w)
+	jse.SetEscapeHTML(false)
+	jse.SetIndent("", "  ")
+	w.Header().Add("content-type", "application/json")
+	jse.Encode(ds.data)
+}
+
+func wsApi(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Upgrade: %s", err)
