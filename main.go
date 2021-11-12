@@ -19,6 +19,8 @@ var upgrader = websocket.Upgrader{
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
 var datastorePath = flag.String("dspath", "data/ds.json", "Datastore path")
 var ds = dataStore{}
+var username = "api"
+var password = "api"
 
 func main() {
 	ds.Load()
@@ -92,7 +94,28 @@ type wsResponse struct {
 	Success      bool                   `json:"success"`
 }
 
+type BasicAuthFunc func(username, password string) bool
+
+func (f BasicAuthFunc) RequireAuth(w http.ResponseWriter) {
+	w.Header().Set("WWW-Authenticate", `Basic realm="Authorization Required"`)
+	w.WriteHeader(401)
+}
+
+func (f BasicAuthFunc) Authenticate(r *http.Request) bool {
+	username, password, ok := r.BasicAuth()
+	return ok && f(username, password)
+}
+
 func getAll(w http.ResponseWriter, r *http.Request) {
+	f := BasicAuthFunc(func(user, pass string) bool {
+		return username == user && password == pass
+	})
+	
+	if !f.Authenticate(r) {
+		f.RequireAuth(w)
+		return
+	}
+
 	jse := json.NewEncoder(w)
 	jse.SetEscapeHTML(false)
 	jse.SetIndent("", "  ")
@@ -117,7 +140,7 @@ func wsApi(w http.ResponseWriter, r *http.Request) {
 		}
 		loginReq := loginMessage{}
 		json.Unmarshal([]byte(message), &loginReq)
-		if loginReq.Pass != "api" || loginReq.User != "api" {
+		if loginReq.Pass != password || loginReq.User != username {
 			log.Println("Invalid login")
 			log.Printf("%s\n\n%+#v", message, loginReq)
 			return
