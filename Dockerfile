@@ -1,10 +1,10 @@
-FROM golang:latest as builder
+FROM golang:buster as builder
 LABEL maintainer="Jemy SCHNEPP <dev@leethium.fr>"
 
 WORKDIR /app
 
 COPY . .
-RUN go build -o wsapi
+RUN make
 
 
 FROM alpine:latest
@@ -14,10 +14,10 @@ WORKDIR /root
 RUN mkdir /root/data
 VOLUME /root/data
 
-COPY --from=builder /app/wsapi .
+COPY --from=builder /app/build .
 
 EXPOSE 8080
 
 # Command to run the executable
 ENTRYPOINT []
-CMD ["./wsapi"]
+CMD ["./bin/wsapi"]
