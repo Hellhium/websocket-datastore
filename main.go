@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -16,24 +18,25 @@ import (
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
+
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
 var datastorePath = flag.String("dspath", "data/ds.json", "Datastore path")
 var ds = dataStore{}
-var username = "api"
-var password = "api"
+var username = flag.String("username", "api", "Username")
+var password = flag.String("password", "api", "Password")
 
 func main() {
 	ds.Load()
 	log.Println("Datastore loaded")
 	flag.Parse()
 	http.HandleFunc("/ws", wsApi)
-	http.HandleFunc("/", getAll)
+	http.HandleFunc("/api", getAll)
 	log.Printf("WS Listening on %s", *addr)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
 type dataStore struct {
-	data  map[string]map[uint64]map[string]interface{}
+	data  map[string]map[string]map[string]interface{}
 	opsM  sync.Mutex
 	saveM sync.Mutex
 }
@@ -49,14 +52,21 @@ func (ds *dataStore) Load() {
 				os.MkdirAll(fp, 0755)
 			}
 			ioutil.WriteFile(*datastorePath, []byte("{}"), 0644)
-			ds.data = map[string]map[uint64]map[string]interface{}{}
+			ds.data = map[string]map[string]map[string]interface{}{}
 			return
 		}
 		log.Fatal(err)
 	}
 	err = json.NewDecoder(f).Decode(&ds.data)
+	f.Close()
 	if err != nil {
-		log.Fatal(err)
+		err := os.Rename(*datastorePath, *datastorePath+".old"+time.Now().Format("2006-01-02-15-04-05"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Datastore invalid, file marked as broken")
+		ioutil.WriteFile(*datastorePath, []byte("{}"), 0644)
+		ds.data = map[string]map[string]map[string]interface{}{}
 	}
 }
 
@@ -82,7 +92,7 @@ type wsRequest struct {
 	ReqID    int                    `json:"reqid"`
 	ReqType  string                 `json:"reqtype"`  // GET / SET / GETALL / ADD / DEL
 	DataType string                 `json:"datatype"` // User / item / ....
-	ID       uint64                 `json:"id"`
+	ID       interface{}            `json:"id"`
 	Data     map[string]interface{} `json:"data"`
 }
 
@@ -108,9 +118,9 @@ func (f BasicAuthFunc) Authenticate(r *http.Request) bool {
 
 func getAll(w http.ResponseWriter, r *http.Request) {
 	f := BasicAuthFunc(func(user, pass string) bool {
-		return username == user && password == pass
+		return *username == user && *password == pass
 	})
-	
+
 	if !f.Authenticate(r) {
 		f.RequireAuth(w)
 		return
@@ -140,7 +150,7 @@ func wsApi(w http.ResponseWriter, r *http.Request) {
 		}
 		loginReq := loginMessage{}
 		json.Unmarshal([]byte(message), &loginReq)
-		if loginReq.Pass != password || loginReq.User != username {
+		if loginReq.Pass != *password || loginReq.User != *username {
 			log.Println("Invalid login")
 			log.Printf("%s\n\n%+#v", message, loginReq)
 			return
@@ -159,7 +169,7 @@ func wsApi(w http.ResponseWriter, r *http.Request) {
 	for {
 		mt, message, err := c.ReadMessage()
 		if debug > 1 {
-			log.Print(mt, message)
+			log.Printf("REQU %d %s", mt, message)
 		}
 
 		if err != nil {
@@ -190,7 +200,7 @@ func wsApi(w http.ResponseWriter, r *http.Request) {
 
 		data, _ := json.Marshal(wsResp)
 		if debug > 1 {
-			log.Print(mt, data)
+			log.Printf("RESP %d %s", mt, data)
 		}
 		err = c.WriteMessage(mt, data)
 		if err != nil {
@@ -208,8 +218,19 @@ func opGet(req *wsRequest) (resp *wsResponse) {
 	ds.opsM.Lock()
 	defer ds.opsM.Unlock()
 
+	var id string
+	switch dta := req.ID.(type) {
+	case string:
+		id = dta
+	case float64:
+		id = fmt.Sprintf("%f", dta)
+	default:
+		resp.Error = "Invalid id type"
+		return
+	}
+
 	if dstype, ok := ds.data[req.DataType]; ok {
-		if data, ok := dstype[req.ID]; ok {
+		if data, ok := dstype[id]; ok {
 			resp.Data = data
 			resp.Success = true
 		} else {
@@ -256,11 +277,22 @@ func opSet(req *wsRequest) (resp *wsResponse) {
 		}
 	}()
 
+	var id string
+	switch dta := req.ID.(type) {
+	case string:
+		id = dta
+	case float64:
+		id = fmt.Sprintf("%f", dta)
+	default:
+		resp.Error = "Invalid id type"
+		return
+	}
+
 	if dstype, ok := ds.data[req.DataType]; ok {
-		dstype[req.ID] = req.Data
+		dstype[id] = req.Data
 	} else {
-		ds.data[req.DataType] = map[uint64]map[string]interface{}{
-			req.ID: req.Data,
+		ds.data[req.DataType] = map[string]map[string]interface{}{
+			id: req.Data,
 		}
 	}
 
@@ -284,17 +316,18 @@ func opAdd(req *wsRequest) (resp *wsResponse) {
 
 	if dstype, ok := ds.data[req.DataType]; ok {
 		nextID := uint64(len(dstype))
-		if _, exist := dstype[nextID]; exist {
+		nextIDS := fmt.Sprintf("%d", nextID)
+		if _, exist := dstype[nextIDS]; exist {
 			resp.Error = "Add non incremental"
 			return
 		}
 
-		dstype[nextID] = req.Data
+		dstype[nextIDS] = req.Data
 		resp.LastInsertID = nextID
 		resp.Success = true
 	} else {
-		ds.data[req.DataType] = map[uint64]map[string]interface{}{
-			req.ID: req.Data,
+		ds.data[req.DataType] = map[string]map[string]interface{}{
+			"0": req.Data,
 		}
 		resp.Success = true
 	}
@@ -315,9 +348,20 @@ func opDel(req *wsRequest) (resp *wsResponse) {
 		}
 	}()
 
+	var id string
+	switch dta := req.ID.(type) {
+	case string:
+		id = dta
+	case float64:
+		id = fmt.Sprintf("%f", dta)
+	default:
+		resp.Error = "Invalid id type"
+		return
+	}
+
 	if dstype, ok := ds.data[req.DataType]; ok {
-		if _, ok := dstype[req.ID]; ok {
-			delete(dstype, req.ID)
+		if _, ok := dstype[id]; ok {
+			delete(dstype, id)
 			resp.Success = true
 		} else {
 			resp.Error = "ID not found"
