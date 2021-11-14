@@ -1,0 +1,171 @@
+openapi: 3.0.0
+servers:
+  - description: Local
+    url: http://localhost:8080
+  - description: Prod
+    url: https://wsstore.stone.leethium.fr
+info:
+  description: WSAPI
+  version: "1.0.0"
+  title: Websocket Datastore
+  contact:
+    email: dev@leethium.fr
+tags:
+  - name: CRUD
+    description: Routes CRUD
+paths:
+  /api:
+    get:
+      security:
+        - HeaderTokenAuth: []
+        - CookieAuth: []
+      tags:
+        - CRUD
+      summary: Récupère la db en entier
+      operationId: getAllDB
+      responses:
+        "200":
+          description: le contenu de la DB
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicSuccess"
+
+
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    respErrGenerics:
+      anyOf:
+        - $ref: "#/components/schemas/respErrGeneric"
+        - $ref: "#/components/schemas/respErrGenericNotFound"
+        - $ref: "#/components/schemas/respErrorJSONErr"
+        - $ref: "#/components/schemas/respErrorNotImplemented"
+        - $ref: "#/components/schemas/respErrorInvalidParam"
+        - $ref: "#/components/schemas/respErrorSQLError"
+        - $ref: "#/components/schemas/respErrorAntiSpam"
+        - $ref: "#/components/schemas/respErrorEmail"
+
+    respErrGeneric:
+      allOf:
+        - $ref: "#/components/schemas/BasicError"
+        - example:
+            error:
+              msg: "Error"
+              code: 1000
+    respErrGenericNotFound:
+      allOf:
+        - $ref: "#/components/schemas/BasicError"
+        - example:
+            error:
+              msg: "NotFound"
+              code: 1001
+    respErrorJSONErr:
+      allOf:
+        - $ref: "#/components/schemas/BasicError"
+        - example:
+            error:
+              msg: "JSONErr"
+              code: 1002
+    respErrorNotImplemented:
+      allOf:
+        - $ref: "#/components/schemas/BasicError"
+        - example:
+            error:
+              msg: "NotImplemented"
+              code: 1003
+    respErrorInvalidParam:
+      allOf:
+        - $ref: "#/components/schemas/BasicError"
+        - example:
+            error:
+              msg: "InvalidParam"
+              code: 1004
+    respErrorSQLError:
+      allOf:
+        - $ref: "#/components/schemas/BasicError"
+        - example:
+            error:
+              msg: "SQLError"
+              code: 1005
+    respErrorAntiSpam:
+      allOf:
+        - $ref: "#/components/schemas/BasicError"
+        - example:
+            error:
+              msg: "GenericAntiSpam"
+              code: 1006
+    respErrorEmail:
+      allOf:
+        - $ref: "#/components/schemas/BasicError"
+        - example:
+            error:
+              msg: "GenericEmail"
+              code: 1007
+
+    RespGenericSuccess:
+      allOf:
+        - $ref: "#/components/schemas/BasicSuccess"
+
+    BasicSuccess:
+      allOf:
+        - $ref: "#/components/schemas/BasicResp"
+        - type: object
+          required:
+            - success
+          properties:
+            success:
+              type: boolean
+              example: true
+            error:
+              type: object
+              example: null
+
+    BasicResp:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+        error:
+          type: object
+          required:
+            - msg
+            - code
+          properties:
+            msg:
+              type: string
+            code:
+              type: integer
+        data:
+          type: object
+        datatype:
+          type: string
+        skip:
+          type: integer
+        count:
+          type: integer
+        total:
+          type: integer
+        next:
+          type: boolean
+
+    BasicError:
+      allOf:
+        - $ref: "#/components/schemas/BasicResp"
+        - type: object
+          required:
+            - error
+            - success
+          properties:
+            error:
+              example:
+                msg: "Error"
+                code: 1000
+            success:
+              type: boolean
+              example: false
