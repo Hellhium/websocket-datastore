@@ -91,7 +91,7 @@ paths:
           schema:
             type: string
       summary: Supprime un type entier
-      operationId: deleteOneByType
+      operationId: deleteType
       responses:
         "200":
           description: success
@@ -151,7 +151,7 @@ paths:
           schema:
             type: string
       summary: Modifie ou ajoute un document par son ID
-      operationId: addOneByType
+      operationId: setOneByType
       requestBody:
         content:
           application/json:
