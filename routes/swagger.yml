@@ -17,8 +17,7 @@ paths:
   /api:
     get:
       security:
-        - HeaderTokenAuth: []
-        - CookieAuth: []
+        - BasicAuth: []
       tags:
         - CRUD
       summary: Récupère la db en entier
@@ -30,7 +29,170 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicSuccess"
+                
+  /api/{type}:
+    get:
+      security:
+        - BasicAuth: []
+      tags:
+        - CRUD
+      parameters:
+        - in: path
+          name: type
+          schema:
+            type: string
+      summary: Récupère le type en entier
+      operationId: getAllByType
+      responses:
+        "200":
+          description: le contenu de la DB par type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicSuccess"
+        "404":
+          description: type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicError"
+    post:
+      security:
+        - BasicAuth: []
+      tags:
+        - CRUD
+      parameters:
+        - in: path
+          name: type
+          schema:
+            type: string
+      summary: Ajoute un document et génère un ID
+      operationId: addOneByType
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqAnyObject"
+      responses:
+        "200":
+          description: l'id du nouveau document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicSuccess"
+    delete:
+      security:
+        - BasicAuth: []
+      tags:
+        - CRUD
+      parameters:
+        - in: path
+          name: type
+          schema:
+            type: string
+      summary: Supprime un type entier
+      operationId: deleteOneByType
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicSuccess"
+        "404":
+          description: type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respErrGenericNotFound"
 
+  /api/{type}/{id}:
+    get:
+      security:
+        - BasicAuth: []
+      tags:
+        - CRUD
+      parameters:
+        - in: path
+          name: type
+          schema:
+            type: string
+        - in: path
+          name: id
+          schema:
+            type: string
+      summary: Récupère un document par son ID
+      operationId: getOneByType
+      responses:
+        "200":
+          description:  
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicSuccess"
+        "404":
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respErrGenericNotFound"
+    put:
+      security:
+        - BasicAuth: []
+      tags:
+        - CRUD
+      parameters:
+        - in: path
+          name: type
+          schema:
+            type: string
+        - in: path
+          name: id
+          schema:
+            type: string
+      summary: Modifie ou ajoute un document par son ID
+      operationId: addOneByType
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqAnyObject"
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicSuccess"
+    delete:
+      security:
+        - BasicAuth: []
+      tags:
+        - CRUD
+      parameters:
+        - in: path
+          name: type
+          schema:
+            type: string
+        - in: path
+          name: id
+          schema:
+            type: string
+      summary: Supprime un document par son ID
+      operationId: deleteOneByType
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicSuccess"
+        "404":
+          description: id or type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/respErrGenericNotFound"
 
 components:
   securitySchemes:
@@ -124,6 +286,9 @@ components:
               type: object
               example: null
 
+    ReqAnyObject:
+      type: object
+    
     BasicResp:
       type: object
       required:
