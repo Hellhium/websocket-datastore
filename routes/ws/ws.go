@@ -7,6 +7,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/hellhium/wstest/datastore"
+	"github.com/hellhium/wstest/lib/router"
+	"github.com/hellhium/wstest/lib/router/routebuilders"
 	"github.com/hellhium/wstest/lib/tlib"
 )
 
@@ -30,6 +32,10 @@ type wsResponse struct {
 	Data         map[string]interface{} `json:"data"`
 	Error        string                 `json:"error"`
 	Success      bool                   `json:"success"`
+}
+
+func init() {
+	router.Router.GET("/ws", routebuilders.BasicHandler(wsApi))
 }
 
 var upgrader = websocket.Upgrader{
