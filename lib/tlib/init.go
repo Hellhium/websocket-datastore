@@ -1,6 +1,7 @@
 package tlib
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -20,5 +21,5 @@ func Init() {
 	applyLogLevel(config.logLevel)
 
 	Info("msg", "initialisation done", "loglevel", config.logLevel, "prod", Config.Prod)
-
+	Debug("vars", fmt.Sprintf("%+#v", config))
 }

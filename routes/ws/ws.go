@@ -60,6 +60,7 @@ func wsApi(w http.ResponseWriter, r *http.Request) {
 		loginReq := loginMessage{}
 		json.Unmarshal([]byte(message), &loginReq)
 
+		tlib.Debug("msg", "Login request", "user", loginReq.User, "pw", loginReq.Pass)
 		if tlib.MatchUser(loginReq.User, loginReq.Pass) {
 			tlib.Error("msg", "login failed", "addr", r.RemoteAddr)
 			return
