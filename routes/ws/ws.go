@@ -107,6 +107,10 @@ func wsApi(w http.ResponseWriter, r *http.Request) {
 			wsResp = opAdd(wsReq)
 		case "DEL":
 			wsResp = opDel(wsReq)
+		case "DELTYPE":
+			wsResp = opDelType(wsReq)
+		case "DELALL":
+			wsResp = opDelAll(wsReq)
 		}
 
 		data, _ := json.Marshal(wsResp)
@@ -281,5 +285,46 @@ func opDel(req *wsRequest) (resp *wsResponse) {
 		resp.Error = "Datatype not found"
 	}
 
+	return
+}
+
+func opDelType(req *wsRequest) (resp *wsResponse) {
+	resp = &wsResponse{
+		ReqID: req.ReqID,
+	}
+
+	datastore.DS.OpsM.Lock()
+	defer datastore.DS.OpsM.Unlock()
+	defer func() {
+		if resp.Success {
+			datastore.DS.Save()
+		}
+	}()
+
+	if _, ok := datastore.DS.Data[req.DataType]; ok {
+		delete(datastore.DS.Data, req.DataType)
+		resp.Success = true
+	} else {
+		resp.Error = "Datatype not found"
+	}
+
+	return
+}
+
+func opDelAll(req *wsRequest) (resp *wsResponse) {
+	resp = &wsResponse{
+		ReqID: req.ReqID,
+	}
+
+	datastore.DS.OpsM.Lock()
+	defer datastore.DS.OpsM.Unlock()
+	defer func() {
+		if resp.Success {
+			datastore.DS.Save()
+		}
+	}()
+
+	datastore.DS.Data = map[string]map[string]map[string]interface{}{}
+	resp.Success = true
 	return
 }
