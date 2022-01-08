@@ -2,8 +2,10 @@ openapi: 3.0.0
 servers:
   - description: Local
     url: http://localhost:8080
-  - description: Prod
+  - description: Leeth
     url: https://wsstore.stone.leethium.fr
+  - description: kosso
+    url: https://api.zaretti.be/
 info:
   description: WSAPI
   version: "1.0.0"
